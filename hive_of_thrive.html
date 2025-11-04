@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Hive of Thrive — Cinematic Bee Edition</title>
+<style>
+  :root{
+    --bg:#2b1a05;
+    --amber:#ffcf3a;
+    --amber2:#ffb600;
+    --amber3:#8a4c00;
+    --edge:#d8b24a;
+    --edge-dark:#7a5e17;
+    --label:#2b1500;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:radial-gradient(120% 100% at 50% -20%, #3a2207 0%, #2b1a05 40%, #201204 100%);
+    font-family:system-ui,Segoe UI,Roboto,Arial,sans-serif;
+    display:grid;grid-template-rows:auto 1fr auto;
+    color:#fbeebd;
+  }
+
+  .bg-grid{
+    position:fixed;inset:0;z-index:-2;
+    background-image:url("data:image/svg+xml;utf8,\
+<svg xmlns='http://www.w3.org/2000/svg' width='120' height='104'><g stroke='%23d8b24a' stroke-width='2' fill='none' opacity='.62'><polygon points='60,2 107,28 107,76 60,102 13,76 13,28'/></g></svg>");
+    background-size:120px 104px;
+    filter:brightness(.85);
+  }
+  .shimmer{
+    position:fixed;inset:0;z-index:-1;
+    background:linear-gradient(120deg,transparent 0%,rgba(255,255,255,.08) 14%,transparent 28%);
+    mix-blend-mode:overlay;animation:shine 7s linear infinite;
+  }
+  @keyframes shine{0%{transform:translateX(-40%)}100%{transform:translateX(40%)}}
+
+  header{text-align:center;padding:16px}
+  h1{color:#ffd560;text-shadow:0 2px 0 #000;font-size:2rem;letter-spacing:.5px}
+
+  .wrap{display:grid;place-items:center}
+  .hive{
+    --size:min(16vw,140px);
+    display:grid;grid-template-columns:repeat(3,var(--size));
+    grid-auto-rows:calc(var(--size)*0.866);
+    gap:8px 0;
+  }
+  .hive > *:nth-child(6n+4),
+  .hive > *:nth-child(6n+5),
+  .hive > *:nth-child(6n+6){transform:translateX(calc(var(--size)/2))}
+  .hex{width:var(--size);height:calc(var(--size)*1.155);position:relative;cursor:pointer;user-select:none}
+  .hex::before{
+    content:"";position:absolute;inset:0;
+    clip-path:polygon(25% 6.6987%,75% 6.6987%,100% 50%,75% 93.3013%,25% 93.3013%,0% 50%);
+    background:linear-gradient(145deg,var(--edge-dark),var(--edge),var(--edge-dark));
+    border:2.6px solid transparent;border-radius:10px;
+    transition:filter .2s ease;
+  }
+ .hex::after{
+  content:"";
+  position:absolute;
+  inset:6px;
+  clip-path:polygon(25% 6.6987%,75% 6.6987%,100% 50%,75% 93.3013%,25% 93.3013%,0% 50%);
+  border-radius:8px;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,.25), transparent 45%),
+    radial-gradient(60% 100% at 50% 20%, rgba(255,227,128,.20), transparent 60%),
+    linear-gradient(180deg, rgba(255,220,100,.92) 0%, rgba(255,182,0,.90) 55%, rgba(138,76,0,.94) 100%);
+  box-shadow:inset 0 10px 20px rgba(0,0,0,.55), inset 0 -6px 14px rgba(0,0,0,.45);
+  transition:box-shadow .2s ease, filter .2s ease;
+  z-index:0; /* ✅ honey background goes behind text */
+}
+
+  .hex:hover::before{filter:drop-shadow(0 0 8px rgba(255,213,96,.6)) drop-shadow(0 0 18px rgba(255,213,96,.3))}
+  .hex:hover::after{box-shadow:inset 0 12px 24px rgba(0,0,0,.55), inset 0 -10px 18px rgba(0,0,0,.45), 0 0 26px rgba(255,213,96,.25);filter:saturate(1.05) brightness(1.04)}
+
+.label{
+  position:absolute;
+  inset:8px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  font-weight:900;
+  font-size:clamp(.9rem,1.2vw,1rem);
+  line-height:1.15;
+  color:#000;
+  text-shadow:none;
+  z-index:2; /* ✅ text now above honey fill */
+}
+
+
+.emoji{
+  font-size:clamp(1.3rem,2.2vw,1.8rem);
+  margin-bottom:4px;
+  flex-shrink:0;
+  filter:brightness(1.5);
+}
+  /* Honey sheet animation */
+  .honey{position:fixed;inset:0;z-index:20;pointer-events:none;transform:translateY(-112%);opacity:1;}
+  .honey svg{width:100%;height:100%;display:block;filter:drop-shadow(0 8px 16px rgba(0,0,0,.55))}
+  .sheet{transform-origin:top center}
+
+  #back{position:fixed;top:14px;left:14px;z-index:30;display:none;
+    background:linear-gradient(180deg,#ffe07d,#cc9e1a);
+    color:#2b1a05;border:0;padding:10px 14px;border-radius:12px;font-weight:900;cursor:pointer;
+    box-shadow:0 6px 14px rgba(0,0,0,.45);}
+  #game{position:fixed;inset:0;border:0;width:100%;height:100%;display:none;z-index:25;background:#000}
+
+  /* Bee flight: right→left continuous wave + wing flap + golden ripple */
+  .bee-wrap{position:fixed;top:13vh;left:0;right:0;height:120px;pointer-events:none;z-index:5;}
+  .bee{position:absolute;right:-120px;top:0;width:90px;height:auto;transform-origin:center;animation:beeFlight 20s linear infinite;}
+  .wingL,.wingR{transform-origin:center;animation:flap 0.28s ease-in-out infinite alternate}
+  @keyframes flap{0%{opacity:.55;transform:scale(1)}100%{opacity:.85;transform:scale(1.06)}}
+  @keyframes beeFlight{
+    0%{transform:translateX(0) translateY(0) rotate(0deg)}
+    20%{transform:translateX(-25vw) translateY(-2vh) rotate(-6deg)}
+    35%{transform:translateX(-45vw) translateY(0) rotate(0deg)}
+    45%{transform:translateX(-50vw) translateY(0) rotate(0deg)}
+    55%{transform:translateX(-55vw) translateY(-1.5vh) rotate(6deg)}
+    80%{transform:translateX(-95vw) translateY(2vh) rotate(0deg)}
+    100%{transform:translateX(-120vw) translateY(0) rotate(0deg)}
+  }
+  .ripple{
+    position:absolute;top:54px;left:50%;transform:translateX(-50%);
+    width:10px;height:10px;border-radius:50%;
+    box-shadow:0 0 0 0 rgba(255,224,97,0);
+    animation:ripple 20s linear infinite;pointer-events:none;z-index:4;
+  }
+  @keyframes ripple{
+    0%,42%{box-shadow:0 0 0 0 rgba(255,224,97,0)}
+    45%{box-shadow:0 0 0 0 rgba(255,224,97,0)}
+    48%{box-shadow:0 0 0 16px rgba(255,224,97,.18)}
+    50%{box-shadow:0 0 0 28px rgba(255,224,97,.10)}
+    54%{box-shadow:0 0 0 38px rgba(255,224,97,.04)}
+    56%,100%{box-shadow:0 0 0 0 rgba(255,224,97,0)}
+  }
+
+  footer{text-align:center;padding:10px 0;color:#f1d98b;font-size:12px}
+  @media (max-width:800px){.hive{--size:26vw;grid-template-columns:repeat(3,var(--size));}}
+  @media (max-width:520px){.hive{--size:30vw;}h1{font-size:1.2rem}}
+</style>
+</head>
+<body>
+<div class="bg-grid"></div><div class="shimmer"></div>
+
+<div class="bee-wrap">
+  <div class="ripple"></div>
+  <svg class="bee" viewBox="0 0 200 120">
+    <ellipse class="wingL" cx="80" cy="30" rx="24" ry="14" fill="rgba(255,255,255,.65)"/>
+    <ellipse class="wingR" cx="100" cy="22" rx="19" ry="11" fill="rgba(255,255,255,.55)"/>
+    <ellipse cx="120" cy="60" rx="48" ry="32" fill="#221409"/>
+    <path d="M92,60 h60" stroke="#f5c74a" stroke-width="10"/>
+    <path d="M92,48 h60" stroke="#f5c74a" stroke-width="10"/>
+    <path d="M92,72 h60" stroke="#f5c74a" stroke-width="10"/>
+    <circle cx="80" cy="58" r="14" fill="#221409"/><circle cx="84" cy="56" r="3" fill="#fff"/>
+    <path d="M155,60 l18,6 -18,6 z" fill="#1b1007"/>
+    <path d="M70,48 q-8 -8 -16 -6" stroke="#f5c74a" stroke-width="3" fill="none"/>
+    <path d="M76,46 q-6 -10 -12 -12" stroke="#f5c74a" stroke-width="3" fill="none"/>
+  </svg>
+</div>
+
+<header><h1>Hive of Thrive</h1></header>
+
+<main class="wrap">
+  <section class="hive">
+    <div class="hex" data-url="https://sriraj2108.github.io/Slot-Machine/"><div class="label"><span class="emoji">🎰</span>Slot Machine</div></div>
+    <div class="hex" data-url="https://sriraj2108.github.io/Hand-Cricket/"><div class="label"><span class="emoji">🏏</span>Hand Cricket</div></div>
+    <div class="hex" data-url="https://sriraj2108.github.io/Rock_Paper_Scissor/"><div class="label"><span class="emoji">✂️</span>Rock Paper Scissors</div></div>
+    <div class="hex" data-url="https://sriraj2108.github.io/TIC-TAC-TOE/"><div class="label"><span class="emoji">⭕❌</span>Tic Tac Toe</div></div>
+    <div class="hex" data-url="https://sriraj2108.github.io/Toss/"><div class="label"><span class="emoji">🪙</span>Heads Or Tails</div></div>
+    <div class="hex" data-url="https://sriraj2108.github.io/casino-game/"><div class="label"><span class="emoji">🎲</span>Casino Game</div></div>
+  </section>
+</main>
+
+<div class="honey" id="honey">
+  <svg viewBox="0 0 1000 1200" preserveAspectRatio="none">
+    <defs><linearGradient id="honeyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffe061"/><stop offset="55%" stop-color="#ffb600"/><stop offset="100%" stop-color="#8a4c00"/>
+    </linearGradient></defs>
+    <path class="sheet" id="sheet"
+      d="M0,0 H1000 V150
+         C860,170 820,230 740,210
+         C690,195 630,260 590,248
+         C520,228 490,290 440,278
+         C390,266 340,320 300,300
+         C240,272 180,325 120,300
+         C80,285 40,260 0,270 Z"
+      fill="url(#honeyGrad)"/>
+  </svg>
+</div>
+
+<button id="back">⬅ Back to Hive</button>
+<iframe id="game" title="Game frame"></iframe>
+
+<footer> Joyous place with Glorious mix — Hive of Thrive</footer>
+
+<script>
+const honey=document.getElementById('honey');
+const sheet=document.getElementById('sheet');
+const frame=document.getElementById('game');
+const back=document.getElementById('back');
+const cells=document.querySelectorAll('.hex[data-url]');
+
+function playOpen(url){
+  honey.style.transition='none';honey.style.transform='translateY(-112%)';honey.style.opacity='1';
+  requestAnimationFrame(()=>{honey.style.transition='transform 760ms cubic-bezier(.25,.8,.25,1),opacity 480ms ease';honey.style.transform='translateY(0)';});
+  setTimeout(()=>{sheet.style.transition='transform 420ms cubic-bezier(.2,.9,.2,1)';sheet.style.transform='scaleY(1.04)';},760);
+  setTimeout(()=>{frame.src=url;frame.style.display='block';back.style.display='block';honey.style.opacity='0';},1220);
+  setTimeout(()=>{sheet.style.transform='scaleY(1)';},1600);
+}
+function playBack(){
+  honey.style.transition='transform 650ms cubic-bezier(.25,.8,.25,1),opacity 480ms ease';honey.style.opacity='1';honey.style.transform='translateY(0)';
+  setTimeout(()=>{frame.style.display='none';frame.src='';back.style.display='none';honey.style.transform='translateY(-116%)';honey.style.opacity='0';},680);
+}
+cells.forEach(c=>c.addEventListener('click',()=>playOpen(c.dataset.url)));
+back.addEventListener('click',playBack);
+</script>
+<script>
+document.querySelectorAll(".hex").forEach(hex => {
+  hex.addEventListener("click", () => {
+    const url = hex.getAttribute("data-url");
+    const honey = document.querySelector(".honey");
+
+    // Start honey animation
+    honey.classList.add("drip");
+
+    // After 1.5 seconds (animation time), open the game
+    setTimeout(() => {
+      window.location.href = url;  // or window.open(url, "_blank") if you want a new tab
+      honey.classList.remove("drip");
+    }, 1500);
+  });
+});
+</script>
+
+</body>
+</html>
